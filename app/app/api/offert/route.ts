@@ -6,25 +6,36 @@ const openai = new OpenAI({
 });
 
 export async function POST(req: Request) {
-  const body = await req.json();
-  const { problem } = body;
+  try {
+    const { problem } = await req.json();
 
-  const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [
-      {
-        role: "system",
-        content:
-          "Du är en erfaren bilmekaniker som ger tydliga och realistiska kostnadsuppskattningar.",
-      },
-      {
-        role: "user",
-        content: `Beskrivning av problem: ${problem}. Ge en tydlig offert i SEK.`,
-      },
-    ],
-  });
+    if (!problem) {
+      return NextResponse.json({ result: "Inget problem angivet." });
+    }
 
-  return NextResponse.json({
-    result: completion.choices[0].message.content,
-  });
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content:
+            "Du är en erfaren svensk bilmekaniker som ger preliminära kostnadsuppskattningar.",
+        },
+        {
+          role: "user",
+          content: problem,
+        },
+      ],
+    });
+
+    return NextResponse.json({
+      result: completion.choices[0].message.content,
+    });
+  } catch (error) {
+    console.error("OFFERT API ERROR:", error);
+    return NextResponse.json(
+      { result: "Tekniskt fel vid offertberäkning." },
+      { status: 500 }
+    );
+  }
 }
